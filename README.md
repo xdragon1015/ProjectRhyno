@@ -7,7 +7,7 @@ A microservice application built in go, and javascript
 # Restful Application vs Rest Application
 
 
-# RabbitMW => Microservice Communication
+# RabbitMQ => Microservice Communication
 
 
 # MongoDB 
