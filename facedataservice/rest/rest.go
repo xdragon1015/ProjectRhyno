@@ -5,8 +5,10 @@ import (
 )
 
 func ServerAPI() {
+	handler := NewDataHandler()
 	r := mux.NewRouter()
 	prefixRouter := r.PathPrefix("/data").Subrouter()
-	prefixRouter.Methods("GET").Path("/{dataPhoto}/{photo}")
-	prefixRouter.Methods("GET").Path("")
+	prefixRouter.Methods("GET").Path("/{dataPhoto}/{photo}").HandlerFunc(handler.findPhotoData)
+	prefixRouter.Methods("GET").Path("").HandlerFunc(handler.findAllPhotoData)
+
 }
