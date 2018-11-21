@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"path/filepath"
+	"time"
 
 	"gocv.io/x/gocv"
 )
@@ -17,7 +18,9 @@ import (
 // Completed. Task 2 => Capture video from webcam, then detect face from user. Using a counter GOCV will take a picture right when counter is 10 seconds and when blob is draw.
 //Task 3 => Send pictue to database. MongoDB
 var model string
+var numberOfDetections = 0
 var config string
+var count = 0
 
 func main() {
 	backend := gocv.NetBackendDefault
@@ -62,6 +65,7 @@ func setVideo(inputID int, window *gocv.Window, net gocv.Net) error {
 			err := fmt.Errorf("No image on device")
 			return err
 		}
+
 		if filepath.Ext(model) == ".caffemodel" {
 			ratio = 1.0
 			mean = gocv.NewScalar(4, 127, 120, 0)
@@ -78,11 +82,18 @@ func setVideo(inputID int, window *gocv.Window, net gocv.Net) error {
 
 		prob := net.Forward("")
 
-		performDetection(&img, prob)
+		if detections, _ := performDetection(&img, prob); detections != 0 {
+			takePhoto(&img, count)
+			window.Close()
+			count++
+			time.Sleep(time.Microsecond * 30000)
+			numberOfDetections = 0
+		}
+
 		window.IMShow(img)
 		window.WaitKey(1)
 	}
-
+	return nil
 }
 
 // performDetection analyzes the results from the detector network,
@@ -90,15 +101,31 @@ func setVideo(inputID int, window *gocv.Window, net gocv.Net) error {
 // where N is the number of detections, and each detection
 // is a vector of float values
 // [batchId, classId, confidence, left, top, right, bottom]
-func performDetection(frame *gocv.Mat, results gocv.Mat) {
+func performDetection(frame *gocv.Mat, results gocv.Mat) (int, error) {
+
 	for i := 0; i < results.Total(); i += 7 {
 		confidence := results.GetFloatAt(0, i+2)
-		if confidence > 0.5 {
+		if confidence > 0.75 {
 			left := int(results.GetFloatAt(0, i+3) * float32(frame.Cols()))
 			top := int(results.GetFloatAt(0, i+4) * float32(frame.Rows()))
 			right := int(results.GetFloatAt(0, i+5) * float32(frame.Cols()))
 			bottom := int(results.GetFloatAt(0, i+6) * float32(frame.Rows()))
 			gocv.Rectangle(frame, image.Rect(left, top, right, bottom), color.RGBA{0, 255, 0, 0}, 2)
+			numberOfDetections++
+			// takePhoto(frame, numberOfDetections)
 		}
 	}
+	if numberOfDetections > 30 {
+		return numberOfDetections, nil
+	}
+	fmt.Println(numberOfDetections)
+	return 0, nil
+}
+
+func takePhoto(frame *gocv.Mat, n int) {
+	for i := 0; i <= n; i++ {
+		url := fmt.Sprintf("../lib/photoData%v.jpg", i)
+		fmt.Println(gocv.IMWrite(url, *frame))
+	}
+
 }
