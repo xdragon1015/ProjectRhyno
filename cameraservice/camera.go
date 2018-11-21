@@ -13,8 +13,8 @@ import (
 //Capture a single frame from webcam, then save it to an image file on disk.
 //Directory name => ../lib/photoData
 
-//Task 1 => Read documentation on GOCV
-//Task 2 => Capture video from webcam, then detect face from user. Using a counter GOCV will take a picture right when counter is 10 seconds.
+//Completed. Task 1 => Read documentation on GOCV
+// Completed. Task 2 => Capture video from webcam, then detect face from user. Using a counter GOCV will take a picture right when counter is 10 seconds and when blob is draw.
 //Task 3 => Send pictue to database. MongoDB
 var model string
 var config string
@@ -28,8 +28,8 @@ func main() {
 
 	net := gocv.ReadNet(model, config)
 	if net.Empty() {
-		fmt.Println("Error reading network model")
-		return
+		err := fmt.Errorf("Error reading network model")
+		panic(err)
 	}
 
 	net.SetPreferableBackend(backend)
