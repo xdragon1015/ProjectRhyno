@@ -38,14 +38,14 @@ func main() {
 	net.SetPreferableBackend(backend)
 	net.SetPreferableTarget(target)
 
-	err := setVideo(0, window, net)
+	err := SetVideo(0, window, net)
 	if err != nil {
 		panic(err)
 	}
 	defer net.Close()
 }
 
-func setVideo(inputID int, window *gocv.Window, net gocv.Net) error {
+func SetVideo(inputID int, window *gocv.Window, net gocv.Net) error {
 	var ratio float64
 	var mean gocv.Scalar
 	var swapRGB bool
