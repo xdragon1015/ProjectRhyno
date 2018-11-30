@@ -15,19 +15,29 @@ import (
 //Directory name => ../lib/photoData
 
 //Completed. Task 1 => Read documentation on GOCV
-// Completed. Task 2 => Capture video from webcam, then detect face from user. Using a counter GOCV will take a picture right when counter is 10 seconds and when blob is draw.
+// Completed. Task 2 => Capture video from webcam, then detect face from user. Using a counterer GOCV will take a picture right when counter is 10 seconds and when blob is draw.
 //Task 3 => Send pictue to database. MongoDB
+
+const (
+	windowName     = "FaceID"
+	modeName       = "res10_300x300_ssd_iter_140000.caffemodel"
+	configFileName = "deploy.prototxt"
+)
+
+var (
+	numberOfDetections = 0
+	counter            = 0
+)
+
 var model string
-var numberOfDetections = 0
 var config string
-var count = 0
 
 func main() {
 	backend := gocv.NetBackendDefault
 	target := gocv.NetTargetCPU
-	model = "res10_300x300_ssd_iter_140000.caffemodel"
-	config = "deploy.prototxt"
-	window := gocv.NewWindow("FaceID")
+	model = modeName
+	config = configFileName
+	window := gocv.NewWindow(windowName)
 
 	net := gocv.ReadNet(model, config)
 	if net.Empty() {
@@ -56,6 +66,7 @@ func SetVideo(inputID int, window *gocv.Window, net gocv.Net) error {
 
 	img := gocv.NewMat()
 	defer img.Close()
+
 	for {
 		if ok := webcam.Read(&img); !ok {
 			var err = fmt.Errorf("Cannot read device: Return bool is %v", ok)
@@ -81,12 +92,13 @@ func SetVideo(inputID int, window *gocv.Window, net gocv.Net) error {
 		net.SetInput(blob, "")
 
 		prob := net.Forward("")
-
-		if detections, _ := performDetection(&img, prob); detections != 0 {
-			takePhoto(&img, count)
-			window.Close()
-			count++
-			time.Sleep(time.Microsecond * 30000)
+		//Perform detections until detections equals 0
+		if detections := performDetection(&img, prob); detections != 0 {
+			time.Sleep(time.Microsecond * 10000)
+			takePhoto(&img, counter)
+			//Update counter accorsindly to the number of detections thats been detected
+			counter++
+			//Set numberOdDetections back to 0
 			numberOfDetections = 0
 		}
 
@@ -101,7 +113,7 @@ func SetVideo(inputID int, window *gocv.Window, net gocv.Net) error {
 // where N is the number of detections, and each detection
 // is a vector of float values
 // [batchId, classId, confidence, left, top, right, bottom]
-func performDetection(frame *gocv.Mat, results gocv.Mat) (int, error) {
+func performDetection(frame *gocv.Mat, results gocv.Mat) int {
 
 	for i := 0; i < results.Total(); i += 7 {
 		confidence := results.GetFloatAt(0, i+2)
@@ -116,16 +128,14 @@ func performDetection(frame *gocv.Mat, results gocv.Mat) (int, error) {
 		}
 	}
 	if numberOfDetections > 30 {
-		return numberOfDetections, nil
+		return numberOfDetections
 	}
 	fmt.Println(numberOfDetections)
-	return 0, nil
+	return 0
 }
 
+//Takephoto does not overrides pictures after updating to n=counter
 func takePhoto(frame *gocv.Mat, n int) {
-	for i := 0; i <= n; i++ {
-		url := fmt.Sprintf("../lib/photoData%v.jpg", i)
-		fmt.Println(gocv.IMWrite(url, *frame))
-	}
-
+	url := fmt.Sprintf("../lib/photoData%v.jpg", n)
+	fmt.Println(gocv.IMWrite(url, *frame))
 }
