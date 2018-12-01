@@ -32,13 +32,13 @@ var (
 	counter            = 0
 )
 
-type eventServiceHandler struct {
+type CameraServiceHandler struct {
 	dbhandler persistance.DatabaseHandler
 }
 
-//NewEventServiceHandler initializises a eventServiceHandler object with dbHandler for which allows to work directly with the database
-func NewEventServiceHandler(databaseHandler persistance.DatabaseHandler) *eventServiceHandler {
-	return &eventServiceHandler{
+//NewCameraServiceHandler initializises a CameraServiceHandler object with dbHandler for which allows to work directly with the database
+func NewCameraServiceHandler(databaseHandler persistance.DatabaseHandler) *CameraServiceHandler {
+	return &CameraServiceHandler{
 		dbhandler: databaseHandler,
 	}
 }
@@ -156,7 +156,7 @@ func TakePhoto(frame *gocv.Mat, n int) {
 	fmt.Println(gocv.IMWrite(url, *frame))
 }
 
-func (eh *eventServiceHandler) addPictureHandler(w http.ResponseWriter, r *http.Request) {
+func (eh *CameraServiceHandler) addPictureHandler(w http.ResponseWriter, r *http.Request) {
 	pic := persistance.Photo{}
 	err := json.NewDecoder(r.Body).Decode(&pic)
 	if err != nil {
