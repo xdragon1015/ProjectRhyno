@@ -1,9 +1,12 @@
-package main
+package cameraservice
 
 import (
+	"ProjectRhyno/lib/persistance"
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/color"
+	"net/http"
 	"path/filepath"
 	"time"
 
@@ -29,10 +32,22 @@ var (
 	counter            = 0
 )
 
+type eventServiceHandler struct {
+	dbhandler persistance.DatabaseHandler
+}
+
+//NewEventServiceHandler initializises a eventServiceHandler object with dbHandler for which allows to work directly with the database
+func NewEventServiceHandler(databaseHandler persistance.DatabaseHandler) *eventServiceHandler {
+	return &eventServiceHandler{
+		dbhandler: databaseHandler,
+	}
+}
+
 var model string
 var config string
 
-func main() {
+//SetCameraService creates window, net, and sets the target and preferable backend to the net from the gocv package
+func SetCameraService() {
 	backend := gocv.NetBackendDefault
 	target := gocv.NetTargetCPU
 	model = modeName
@@ -55,6 +70,7 @@ func main() {
 	defer net.Close()
 }
 
+//SetVideo initializes the video recording and face detection features
 func SetVideo(inputID int, window *gocv.Window, net gocv.Net) error {
 	var ratio float64
 	var mean gocv.Scalar
@@ -93,9 +109,9 @@ func SetVideo(inputID int, window *gocv.Window, net gocv.Net) error {
 
 		prob := net.Forward("")
 		//Perform detections until detections equals 0
-		if detections := performDetection(&img, prob); detections != 0 {
+		if detections := PerformDetection(&img, prob); detections != 0 {
 			time.Sleep(time.Microsecond * 10000)
-			takePhoto(&img, counter)
+			TakePhoto(&img, counter)
 			//Update counter accorsindly to the number of detections thats been detected
 			counter++
 			//Set numberOdDetections back to 0
@@ -108,12 +124,12 @@ func SetVideo(inputID int, window *gocv.Window, net gocv.Net) error {
 	return nil
 }
 
-// performDetection analyzes the results from the detector network,
+// PerformDetection analyzes the results from the detector network,
 // which produces an output blob with a shape 1x1xNx7
 // where N is the number of detections, and each detection
 // is a vector of float values
 // [batchId, classId, confidence, left, top, right, bottom]
-func performDetection(frame *gocv.Mat, results gocv.Mat) int {
+func PerformDetection(frame *gocv.Mat, results gocv.Mat) int {
 
 	for i := 0; i < results.Total(); i += 7 {
 		confidence := results.GetFloatAt(0, i+2)
@@ -134,8 +150,25 @@ func performDetection(frame *gocv.Mat, results gocv.Mat) int {
 	return 0
 }
 
-//Takephoto does not overrides pictures after updating to n=counter
-func takePhoto(frame *gocv.Mat, n int) {
+//TakePhoto does not overrides pictures after updating to n=counter
+func TakePhoto(frame *gocv.Mat, n int) {
 	url := fmt.Sprintf("../lib/photoData%v.jpg", n)
 	fmt.Println(gocv.IMWrite(url, *frame))
+}
+
+func (eh *eventServiceHandler) addPictureHandler(w http.ResponseWriter, r *http.Request) {
+	pic := persistance.Photo{}
+	err := json.NewDecoder(r.Body).Decode(&pic)
+	if err != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "{error: error occurred while persisting picture %s}", err)
+		return
+	}
+
+	id, err := eh.dbhandler.AddPhoto(pic)
+	if err != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "{error: error occurred while persisting picture %d %s}", id, err)
+		return
+	}
 }
