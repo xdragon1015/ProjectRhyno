@@ -172,6 +172,7 @@ func TakePhoto(frame *gocv.Mat, n int) {
 }
 
 func (eh *CameraServiceHandler) addPictureHandler(w http.ResponseWriter, r *http.Request) {
+	SetCameraService()
 	pic := persistance.Photo{}
 	err := json.NewDecoder(r.Body).Decode(&pic)
 	if err != nil {
@@ -181,6 +182,15 @@ func (eh *CameraServiceHandler) addPictureHandler(w http.ResponseWriter, r *http
 	}
 
 	id, err := eh.dbhandler.AddPhoto(pic)
+	if err != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "{error: error occurred while persisting picture %d %s}", id, err)
+		return
+	}
+
+	photo := getPictures()
+	pic.Photo = photo
+	id, err = eh.dbhandler.AddPhoto(pic)
 	if err != nil {
 		w.WriteHeader(500)
 		fmt.Fprintf(w, "{error: error occurred while persisting picture %d %s}", id, err)
