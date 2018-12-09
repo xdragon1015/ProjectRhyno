@@ -1,4 +1,4 @@
-package cameraservice
+package rest
 
 import (
 	"ProjectRhyno/lib/persistance"
@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -150,9 +152,22 @@ func PerformDetection(frame *gocv.Mat, results gocv.Mat) int {
 	return 0
 }
 
+func getPictures() []byte {
+	var photo []byte
+	filepath.Walk("photos", func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+		file, err := ioutil.ReadFile(path)
+		photo = file
+		return err
+	})
+	return photo
+}
+
 //TakePhoto does not overrides pictures after updating to n=counter
 func TakePhoto(frame *gocv.Mat, n int) {
-	url := fmt.Sprintf("../lib/photoData%v.jpg", n)
+	url := fmt.Sprintf("../lib/photos/photoData%v.jpg", n)
 	fmt.Println(gocv.IMWrite(url, *frame))
 }
 
