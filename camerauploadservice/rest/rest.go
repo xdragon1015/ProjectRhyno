@@ -12,6 +12,5 @@ func ServerAPI(endPoint string, dbHandler persistance.DatabaseHandler) {
 	r := mux.NewRouter()
 	prefixRouter := r.PathPrefix("/data").Subrouter()
 	prefixRouter.Methods("POST").Path("").HandlerFunc(handler.addPictureHandler)
-
 	http.ListenAndServe(endPoint, r)
 }

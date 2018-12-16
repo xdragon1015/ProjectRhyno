@@ -1,14 +1,9 @@
-package rest
+package main
 
 import (
-	"ProjectRhyno/lib/persistance"
-	"encoding/json"
 	"fmt"
 	"image"
 	"image/color"
-	"io/ioutil"
-	"net/http"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -34,19 +29,12 @@ var (
 	counter            = 0
 )
 
-type CameraServiceHandler struct {
-	dbhandler persistance.DatabaseHandler
-}
-
-//NewCameraServiceHandler initializises a CameraServiceHandler object with dbHandler for which allows to work directly with the database
-func NewCameraServiceHandler(databaseHandler persistance.DatabaseHandler) *CameraServiceHandler {
-	return &CameraServiceHandler{
-		dbhandler: databaseHandler,
-	}
-}
-
 var model string
 var config string
+
+func main() {
+	SetCameraService()
+}
 
 //SetCameraService creates window, net, and sets the target and preferable backend to the net from the gocv package
 func SetCameraService() {
@@ -123,7 +111,6 @@ func SetVideo(inputID int, window *gocv.Window, net gocv.Net) error {
 		window.IMShow(img)
 		window.WaitKey(1)
 	}
-	return nil
 }
 
 // PerformDetection analyzes the results from the detector network,
@@ -135,7 +122,7 @@ func PerformDetection(frame *gocv.Mat, results gocv.Mat) int {
 
 	for i := 0; i < results.Total(); i += 7 {
 		confidence := results.GetFloatAt(0, i+2)
-		if confidence > 0.75 {
+		if confidence > 0.65 {
 			left := int(results.GetFloatAt(0, i+3) * float32(frame.Cols()))
 			top := int(results.GetFloatAt(0, i+4) * float32(frame.Rows()))
 			right := int(results.GetFloatAt(0, i+5) * float32(frame.Cols()))
@@ -152,48 +139,8 @@ func PerformDetection(frame *gocv.Mat, results gocv.Mat) int {
 	return 0
 }
 
-func getPictures() []byte {
-	var photo []byte
-	filepath.Walk("photos", func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
-			return nil
-		}
-		file, err := ioutil.ReadFile(path)
-		photo = file
-		return err
-	})
-	return photo
-}
-
 //TakePhoto does not overrides pictures after updating to n=counter
 func TakePhoto(frame *gocv.Mat, n int) {
 	url := fmt.Sprintf("../lib/photos/photoData%v.jpg", n)
 	fmt.Println(gocv.IMWrite(url, *frame))
-}
-
-func (eh *CameraServiceHandler) addPictureHandler(w http.ResponseWriter, r *http.Request) {
-	SetCameraService()
-	pic := persistance.Photo{}
-	err := json.NewDecoder(r.Body).Decode(&pic)
-	if err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "{error: error occurred while persisting picture %s}", err)
-		return
-	}
-
-	id, err := eh.dbhandler.AddPhoto(pic)
-	if err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "{error: error occurred while persisting picture %d %s}", id, err)
-		return
-	}
-
-	photo := getPictures()
-	pic.Photo = photo
-	id, err = eh.dbhandler.AddPhoto(pic)
-	if err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "{error: error occurred while persisting picture %d %s}", id, err)
-		return
-	}
 }
