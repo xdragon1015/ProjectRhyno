@@ -1,11 +1,16 @@
 package main
 
 import (
+	"ProjectRhyno/lib/persistance"
+	"ProjectRhyno/lib/persistance/dblayer"
+	"errors"
 	"fmt"
 	"image"
 	"image/color"
 	"path/filepath"
 	"time"
+
+	"gopkg.in/mgo.v2/bson"
 
 	"gocv.io/x/gocv"
 )
@@ -100,8 +105,11 @@ func SetVideo(inputID int, window *gocv.Window, net gocv.Net) error {
 		prob := net.Forward("")
 		//Perform detections until detections equals 0
 		if detections := PerformDetection(&img, prob); detections != 0 {
-			time.Sleep(time.Microsecond * 10000)
-			TakePhoto(&img, counter)
+			time.Sleep(time.Second * 2)
+			err := TakePhoto(&img, counter)
+			if err != nil {
+				panic(err)
+			}
 			//Update counter accorsindly to the number of detections thats been detected
 			counter++
 			//Set numberOdDetections back to 0
@@ -140,7 +148,19 @@ func PerformDetection(frame *gocv.Mat, results gocv.Mat) int {
 }
 
 //TakePhoto does not overrides pictures after updating to n=counter
-func TakePhoto(frame *gocv.Mat, n int) {
+func TakePhoto(frame *gocv.Mat, n int) error {
+	fmt.Println("Connection to local DB")
+	newPersistance, err := dblayer.NewPersistanceLayer("mongodb", "mongodb://127.0.0.1")
+	if err != nil {
+		return errors.New("Connection to db could not be done. Check options type or url connection")
+	}
 	url := fmt.Sprintf("../lib/photos/photoData%v.jpg", n)
 	fmt.Println(gocv.IMWrite(url, *frame))
+	matToByte := frame.ToBytes()
+	photo := persistance.Photo{
+		ID:    bson.NewObjectId(),
+		Photo: matToByte,
+	}
+	newPersistance.AddPhoto(photo)
+	return nil
 }
