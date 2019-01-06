@@ -22,11 +22,6 @@ go run main
 ```
 
 
-
-# Modifying the Configuration file located in the lib directory.
-Coming soon 
-
-
 # ProjectRhyno
 A microservice application built in go, and javascript
 
@@ -38,6 +33,11 @@ Coming soon
 
 # RabbitMQ vs HTTP - Microservice Communication
 Coming soon 
+
+
+# Modifying the Configuration file located in the lib directory.
+Coming soon 
+
 
 # MongoDB 
 https://www.mongodb.com/
