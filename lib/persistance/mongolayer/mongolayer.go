@@ -42,8 +42,19 @@ func (mongoDB *MongoDBLayer) AddPhoto(photo persistance.Photo) ([]byte, error) {
 
 //FindPhoto finds object from collection return PHOTO object back to the calling function
 //Tak 1 => Implement function FindPhoto from interface and return PHOTO object back to the calling function
-func (mongoDB MongoDBLayer) FindPhoto(id []byte) (persistance.Photo, error) {
+func (mongoDB *MongoDBLayer) FindPhoto(id []byte) (persistance.Photo, error) {
+	s := refreshSession(mongoDB)
+	defer s.Close()
 	return persistance.Photo{}, nil
+}
+
+//FindAllPhotos finds all photo object in the photo document
+func (mongoDB *MongoDBLayer) FindAllPhotos(id []byte) ([]persistance.Photo, error) {
+	s := refreshSession(mongoDB)
+	defer s.Close()
+	photos := []persistance.Photo{}
+	s.DB(DB).C(PHOTOS).Find(photos).All(&photos)
+	return photos, nil
 }
 
 func refreshSession(mongoDB *MongoDBLayer) *mgo.Session {

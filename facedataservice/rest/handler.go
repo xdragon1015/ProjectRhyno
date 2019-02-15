@@ -18,10 +18,11 @@ func NewDataHandler(databaseHandler persistance.DatabaseHandler) *dataFaceHandle
 }
 
 func (eh *dataFaceHandler) findPhotoData(w http.ResponseWriter, r *http.Request) {
+	photo := 
 
 }
 func (eh *dataFaceHandler) findAllPhotoData(w http.ResponseWriter, r *http.Request) {
-
+	photos := eh.dbHandler.FindPhoto()
 }
 
 func (eh *dataFaceHandler) newFaceHandler(w http.ResponseWriter, r *http.Request) {
